@@ -110,6 +110,17 @@ namespace Tweetinvi.Logic
             return ExecuteAuthenticatedUserOperation(() => _timelineController.GetMentionsTimeline(maximumNumberOfMentions));
         }
 
+
+        public IEnumerable<ITweet> GetRetweetsofMeTimeline(int maximumNumberOfTweets = 40)
+        {
+            return ExecuteAuthenticatedUserOperation(() => _timelineController.GetRetweetsOfMeTimeline(maximumNumberOfTweets));
+        }
+
+        public IEnumerable<ITweet> GetRetweetsofMeTimeline(IRetweetsOfMeTimelineParameters retweetsOfMeTimelineParameters)
+        {
+            return ExecuteAuthenticatedUserOperation(() => _timelineController.GetRetweetsOfMeTimeline(retweetsOfMeTimelineParameters));
+        }
+
         // Frienships
         public override IRelationshipDetails GetRelationshipWith(IUserIdentifier user)
         {
@@ -436,6 +447,16 @@ namespace Tweetinvi.Logic
             return await ExecuteAuthenticatedUserOperation(() => _taskFactory.ExecuteTaskAsync(() => GetMentionsTimeline(count)));
         }
 
+        public async Task<IEnumerable<ITweet>> GetRetweetsofMeTimelineAsync(int maximumNumberOfTweets = 40)
+        {
+            return await ExecuteAuthenticatedUserOperation(() => _taskFactory.ExecuteTaskAsync(() => GetRetweetsofMeTimeline(maximumNumberOfTweets)));
+        }
+
+        public async Task<IEnumerable<ITweet>> GetRetweetsofMeTimelineAsync(IRetweetsOfMeTimelineParameters retweetsOfMeTimelineParameters)
+        {
+            return await ExecuteAuthenticatedUserOperation(() => _taskFactory.ExecuteTaskAsync(() => GetRetweetsofMeTimeline(retweetsOfMeTimelineParameters)));
+        }
+
         // Relationships
         public override async Task<IRelationshipDetails> GetRelationshipWithAsync(IUserIdentifier user)
         {
@@ -646,6 +667,10 @@ namespace Tweetinvi.Logic
         {
             return await ExecuteAuthenticatedUserOperation(() => _taskFactory.ExecuteTaskAsync(() => UnMuteUser(screenName)));
         }
+
+     
+
+
 
         #endregion
     }

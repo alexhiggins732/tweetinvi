@@ -25,7 +25,11 @@ using Tweetinvi.Json;
 using Tweetinvi.Logic.Model;
 using Geo = Tweetinvi.Geo;
 using SavedSearch = Tweetinvi.SavedSearch;
-
+using System.Timers;
+using System.Collections.Concurrent;
+using Tweetinvi.Logic.DTO;
+using Examplinvi.DbFx;
+using Examplinvi.DbFx.Models;
 // JSON static classes to get json from Twitter.
 
 // ReSharper disable UnusedVariable
@@ -38,11 +42,57 @@ namespace Examplinvi
     // If you are a windows phone developer, please use the Async classes
     // User.GetAuthenticatedUser(); -> await UserAsync.GetAuthenticatedUser();
 
+    public class QueueProcessor<T> : IDisposable
+    {
+        public ConcurrentQueue<T> queue;
+        public Timer timer;
+        Action<T> processAction;
+        public QueueProcessor(Action<T> processAction, int processInterval)
+        {
+            this.queue = new ConcurrentQueue<T>();
+            this.processAction = processAction;
+            this.timer = new Timer();
+            timer.Interval = processInterval;
+            timer.AutoReset = true;
+            timer.Elapsed += Timer_Elapsed;
+            Start();
+
+        }
+
+
+
+        private bool processing = false;
+        private bool stopped = true;
+        public void Timer_Elapsed(object e, ElapsedEventArgs args)
+        {
+            if (processing) return;
+            processing = true;
+            while (!stopped && queue.TryDequeue(out T result))
+            {
+                processAction(result);
+            }
+            processing = false;
+        }
+        public void Queue(T item) => queue.Enqueue(item);
+        public void Start() { stopped = false; timer.Start(); }
+        public void Stop() { this.stopped = true; timer.Stop(); }
+
+        public void Dispose()
+        {
+            if (timer != null)
+            {
+                Stop();
+                timer.Elapsed -= Timer_Elapsed;
+                timer = null;
+            }
+        }
+    }
     class Program
     {
         static void Main()
         {
-            Auth.SetUserCredentials("CONSUMER_KEY", "CONSUMER_SECRET", "ACCESS_TOKEN", "ACCESS_TOKEN_SECRET");
+            Creds.Helper.SetCreds();
+            //Auth.SetUserCredentials("CONSUMER_KEY", "CONSUMER_SECRET", "ACCESS_TOKEN", "ACCESS_TOKEN_SECRET");
 
             TweetinviEvents.QueryBeforeExecute += (sender, args) =>
             {
@@ -55,7 +105,7 @@ namespace Examplinvi
 
             // Un-comment to run the examples below
             // Examples.ExecuteExamples = true;
-
+            Examples.Stream_FriendFilteredStreamExample();
             GenerateCredentialExamples();
             UserLiveFeedExamples();
             TweetExamples();
@@ -192,6 +242,7 @@ namespace Examplinvi
                 return;
             }
 
+            Examples.Timeline_GetRetweetsOfMeTimeline();
             Examples.Timeline_GetHomeTimeline();
             Examples.Timeline_GetUserTimeline(Examples.USER_SCREEN_NAME_TO_TEST);
             Examples.Timeline_GetMentionsTimeline();
@@ -368,7 +419,7 @@ namespace Examplinvi
     {
         // ReSharper disable once UnusedAutoPropertyAccessor.Global
         public static bool ExecuteExamples { get; set; }
-        public const string USER_SCREEN_NAME_TO_TEST = "ladygaga";
+        public static readonly string USER_SCREEN_NAME_TO_TEST = User.GetAuthenticatedUser().ScreenName;
 
         #region Credentials and Login
 
@@ -842,6 +893,18 @@ namespace Examplinvi
             }
         }
 
+
+        public static void Timeline_GetRetweetsOfMeTimeline()
+        {
+            var authenticatedUser = User.GetAuthenticatedUser();
+
+            var retweetsOfMe = authenticatedUser.GetRetweetsofMeTimeline();
+            foreach (var rt in retweetsOfMe)
+            {
+                Console.WriteLine(rt.Text);
+            }
+        }
+
         #endregion
 
         #region Stream
@@ -849,7 +912,11 @@ namespace Examplinvi
         public static void SimpleStream_Events()
         {
             var stream = Stream.CreateTweetStream();
-            stream.TweetReceived += (sender, args) => { };
+            stream.TweetReceived += (sender, args) =>
+            {
+                var t = args.Tweet;
+                Console.WriteLine(t.CreatedBy.ScreenName);
+            };
             stream.TweetDeleted += (sender, args) => { };
             stream.TweetLocationInfoRemoved += (sender, args) => { };
 
@@ -861,6 +928,11 @@ namespace Examplinvi
             stream.WarningFallingBehindDetected += (sender, args) => { };
 
             stream.UnmanagedEventReceived += (sender, args) => { };
+            stream.StreamStarted += (sender, args) =>
+            {
+                string bp = "";
+            };
+            stream.StartStream(null);
         }
 
         public static void Stream_SampleStreamExample()
@@ -869,7 +941,19 @@ namespace Examplinvi
 
             stream.TweetReceived += (sender, args) =>
             {
-                Console.WriteLine(args.Tweet.Text);
+                var t = args.Tweet;
+                if (t.IsRetweet)
+                {
+                    var tr = t.RetweetedTweet;
+                    var createdBy = tr.CreatedBy.ScreenName;
+                    if (createdBy == User.GetAuthenticatedUser().ScreenName)
+                    {
+                        string bp = "";
+                    }
+                    Console.WriteLine(createdBy);
+                }
+
+                // Console.WriteLine(args.Tweet.Text);
             };
 
             stream.AddTweetLanguageFilter(LanguageFilter.English);
@@ -878,6 +962,179 @@ namespace Examplinvi
             stream.StartStream();
         }
 
+        public static void Stream_FilteredUserStreamExample()
+        {
+            var stream = Stream.CreateFilteredStream();
+            //var location = new Location(36.8, -124.75, 32.75, -126.89);
+            //
+            //stream.AddLocation(location);
+            //stream.AddLocation(location);
+            var authUser = User.GetAuthenticatedUser();
+            stream.AddFollow(authUser);
+            //stream.AddTrack("linvi");
+
+            stream.MatchingTweetReceived += (sender, args) =>
+            {
+                var tweet = args.Tweet;
+                Console.WriteLine("{0} was detected between the following tracked locations:", tweet.Id);
+
+                IEnumerable<ILocation> matchingLocations = args.MatchingLocations;
+                foreach (var matchingLocation in matchingLocations)
+                {
+                    Console.Write("({0}, {1}) ;", matchingLocation.Coordinate1.Latitude, matchingLocation.Coordinate1.Longitude);
+                    Console.WriteLine("({0}, {1})", matchingLocation.Coordinate2.Latitude, matchingLocation.Coordinate2.Longitude);
+                }
+            };
+
+            stream.StartStreamMatchingAllConditions();
+        }
+
+        public static void Stream_FriendFilteredStreamExample()
+        {
+            var stream = Stream.CreateFilteredStream();
+            var current = User.GetAuthenticatedUser();
+            var ids = current.GetFriendIds(4000).ToList();
+            var allIds = ids.ToList();
+
+            //ids.Clear();
+            ids.Add(current.Id);
+            ids.Add(2945287090);
+            ids = ids.Distinct().ToList();
+            ids.ForEach(id => stream.AddFollow(id));
+
+            DateTime startDate = DateTime.Now;
+            decimal recievedCount = 0;
+            decimal recievedOriginalCount = 0;
+            decimal filteredCount = 0;
+            decimal tweetsPerSecond = 0.0m;
+            decimal originalPerSecond = 0.0m;
+            decimal filteredPerSecond = 0.0m;
+
+
+
+            var timer = new Timer();
+            timer.AutoReset = true;
+            timer.Interval = 10 * 1000;
+            ConcurrentQueue<ITweet> tweets = new ConcurrentQueue<ITweet>();
+            timer.Elapsed += (sender, e) =>
+            {
+                var now = DateTime.Now;
+                var elapsed = now.Subtract(startDate);
+                tweetsPerSecond = recievedCount / (decimal)elapsed.TotalSeconds;
+                originalPerSecond = recievedOriginalCount / (decimal)elapsed.TotalSeconds;
+                filteredPerSecond = filteredCount / (decimal)elapsed.TotalSeconds;
+                Console.WriteLine($"TPS: {tweetsPerSecond.ToString("0.00")} UPS: {originalPerSecond.ToString("0.00")} FPS: {filteredPerSecond.ToString("0.00")}");
+                var l = new List<ITweet>();
+                while (tweets.Count > 0)
+                {
+                    if (tweets.TryDequeue(out ITweet result))
+                    {
+                        l.Add(result);
+                    }
+                    try
+                    {
+                        List<DbTweet> dbTweets = null;
+                        using (var ctx = new TDbContext())
+                        {
+                            var newIds = l.Select(x => x.Id).ToList();
+                            var existing = ctx.Tweets.Where(x => newIds.Contains(x.Id)).Select(x => x.Id).ToList();
+                            l = l.Where(x => !existing.Contains(x.Id)).ToList();
+                            dbTweets = l.Select(x => ((ITweet)x).ToDbTweet()).ToList();
+                        }
+                        foreach (var tweet in dbTweets)
+                        {
+                            try
+                            {
+                                using (var ctx = new TDbContext())
+                                {
+
+                                    //ctx.Entry(tweet).CurrentValues.SetValues(tweet);
+                                    foreach (var media in tweet.Media.ToList())
+                                    {
+                                        var dbMedia = ctx.Media.SingleOrDefault(x => x.Id == media.Id);
+
+                                        if (dbMedia != null)
+                                        {
+                                            dbMedia.Tweet.Add(tweet);
+                                            tweet.Media.Add(dbMedia);
+                                            tweet.Media.Remove(media);
+                                          
+
+                                            //ctx.Media.Remove(dbMedia);
+                                            // update Subset1
+                                            //ctx.Entry(dbMedia).CurrentValues.SetValues(media);
+                                            //ctx.Entry(dbMedia).State = System.Data.Entity.EntityState.Unchanged;
+                                            //ctx.Entry(dbMedia).CurrentValues.SetValues(media);
+                                        }
+                                        else
+                                            ctx.Media.Add(media);
+                                    }
+                                    ctx.Tweets.Add(tweet);
+                                    ctx.SaveChanges();
+                                }
+                            }
+                            catch (Exception ex2)
+                            {
+                                string bp = ex2.Message;
+                            }
+                        }
+
+                    }
+                    catch (Exception ex)
+                    {
+                        string bp = ex.Message;
+                    }
+
+                }
+
+                // var retweetedTweetDTOs = l.Where(x => x.RetweetedTweetDTO != null).ToList();
+                //var quotedweetDTOs = l.Where(x => x.QuotedTweetDTO != null).ToList();
+                //var quotedweetDTOs = l.Where(x => x. != null).ToList();
+                //var userIds = l.Select(x => x.CreatedBy.Id).ToList();
+                //var replyToUserIds = l.Where(x => x.InReplyToUserId != null).Select(x=> (long)x.InReplyToUserId).ToList();
+                //var quotedIds = l.Where(x => x.CurrentUserRetweetIdentifier != null).Select(x => (long)x.CurrentUserRetweetIdentifier.Id).ToList();
+
+                //var statusIds = l.Where(x=> x.InReplyToStatusId!=null).Select(x=> (long)x.InReplyToStatusId).ToList();
+                //var quotedStatusIds = l.Where(x => x.QuotedStatusId != null).Select(x => (long)x.QuotedStatusId).ToList();
+                //var quotedStatusIds = l.Where(x => x.RetweetedTweetDTO != null).Select(x => (long)x.QuotedStatusId).ToList();
+
+            };
+
+            stream.StreamStarted += (sender, args) =>
+            {
+                startDate = DateTime.Now;
+            };
+            stream.TweetDeleted += (sender, args) =>
+             {
+                 var id = args.TweetId;
+                 Console.WriteLine($"{args.UserId} Deleted: {id}");
+             };
+
+            stream.MatchingTweetReceived += (sender, args) =>
+            {
+                ++recievedCount;
+                var t = args.Tweet;
+                if (!t.IsRetweet) ++recievedOriginalCount;
+                if (ids.Contains(t.CreatedBy.Id))
+                {
+                    ++filteredCount;
+                    tweets.Enqueue(t);
+                    //Console.WriteLine($"@{t.CreatedBy.ScreenName}: {t.Text}");
+                }
+
+                //Console.WriteLine("{0} was detected between the following tracked locations:", tweet.Id);
+
+                //IEnumerable<ILocation> matchingLocations = args.MatchingLocations;
+                //foreach (var matchingLocation in matchingLocations)
+                //{
+                //    Console.Write("({0}, {1}) ;", matchingLocation.Coordinate1.Latitude, matchingLocation.Coordinate1.Longitude);
+                //    Console.WriteLine("({0}, {1})", matchingLocation.Coordinate2.Latitude, matchingLocation.Coordinate2.Longitude);
+                //}
+            };
+
+            timer.Start();
+            stream.StartStreamMatchingAnyCondition();
+        }
         public static void Stream_FilteredStreamExample()
         {
             var stream = Stream.CreateFilteredStream();
@@ -903,6 +1160,18 @@ namespace Examplinvi
             stream.StartStreamMatchingAllConditions();
         }
 
+        public static void Stream_AccountActivity()
+        {
+            var user = User.GetAuthenticatedUser();
+            var userStream = Stream.CreateAccountActivityStream(user.Id);
+            userStream.MessageReceived += (sender, e) =>
+             {
+
+                 Console.WriteLine(e.ToJson());
+             };
+
+            System.Threading.Thread.Sleep(100000);
+        }
         public static void Stream_UserStreamExample()
         {
             var userStream = Stream.CreateUserStream();
@@ -936,13 +1205,36 @@ namespace Examplinvi
                 Console.WriteLine(friendIds.Count());
             };
 
+
             // Access Revoked
             userStream.AccessRevoked += (sender, args) =>
             {
                 Console.WriteLine("Application {0} had its access revoked!", args.Info.ApplicationName);
             };
 
+            userStream.StreamIsReady += (sender, args) =>
+             {
+                 Console.WriteLine(args.ToJson());
+             };
+
+            userStream.StreamStarted += (sender, args) =>
+             {
+                 Console.WriteLine(nameof(userStream.StreamStarted));
+                 Console.WriteLine(args.ToJson());
+             };
+            userStream.StreamIsReady += (sender, args) =>
+            {
+                Console.WriteLine(nameof(userStream.StreamIsReady));
+                Console.WriteLine(args.ToJson());
+            };
+            userStream.StreamStopped += (sender, args) =>
+            {
+                Console.WriteLine(nameof(userStream.StreamStopped));
+                Console.WriteLine(args.ToJson());
+            };
             userStream.StartStream();
+
+            System.Threading.Thread.Sleep(600000);
         }
 
         public static void EventsRelatedWithTweetCreation(IUserStream userStream)

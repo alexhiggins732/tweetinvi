@@ -126,5 +126,15 @@ namespace Tweetinvi.Controllers.Timeline
             var timelineDTO = _timelineQueryExecutor.GetRetweetsOfMeTimeline(parameters);
             return _tweetFactory.GenerateTweetsFromDTO(timelineDTO);
         }
+
+        // Retweets Of Me Timeline
+        public IEnumerable<ITweet> GetRetweetsOfMeTimeline(int maximumNumberOfRetweets)
+        {
+            var timelineRequestParameter = _timelineQueryParameterGenerator.CreateRetweetsOfMeTimelineParameters();
+            timelineRequestParameter.MaximumNumberOfTweetsToRetrieve = maximumNumberOfRetweets;
+  
+            var timelineDTO = _timelineQueryExecutor.GetRetweetsOfMeTimeline(timelineRequestParameter);
+            return _tweetFactory.GenerateTweetsFromDTO(timelineDTO);
+        }
     }
 }

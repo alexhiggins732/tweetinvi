@@ -49,5 +49,11 @@ namespace Tweetinvi
         {
             return await Sync.ExecuteTaskAsync(() => Timeline.GetMentionsTimeline(timelineParameters));
         }
+
+        public static async Task<IEnumerable<ITweet>> GetRetweetsOfMeTimeline(IRetweetsOfMeTimelineParameters timelineParameters)
+        {
+            return await Sync.ExecuteTaskAsync(() => Timeline.GetRetweetsOfMeTimeline(timelineParameters));
+        }
     }
 }
+

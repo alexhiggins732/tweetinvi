@@ -25,5 +25,6 @@ namespace Tweetinvi.Core.Controllers
 
         // Retweets Of Me Timeline
         IEnumerable<ITweet> GetRetweetsOfMeTimeline(IRetweetsOfMeTimelineParameters parameters);
+        IEnumerable<ITweet> GetRetweetsOfMeTimeline(int maximumNumberOfTweets = 40);
     }
 }

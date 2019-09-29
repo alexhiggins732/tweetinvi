@@ -82,6 +82,17 @@ namespace Tweetinvi.Models
         /// </summary>
         IEnumerable<ITweet> GetHomeTimeline(IHomeTimelineParameters timelineRequestParameters);
 
+
+
+        /// <summary>
+        /// Get the latest tweets of the authenticated user Home timeline.
+        /// </summary>
+        IEnumerable<ITweet> GetRetweetsofMeTimeline(int maximumNumberOfTweets = 40);
+        /// <summary>
+        /// Get the latest tweets of the authenticated user Home timeline.
+        /// </summary>
+        IEnumerable<ITweet> GetRetweetsofMeTimeline(IRetweetsOfMeTimelineParameters retweetsOfMeTimelineParameters);
+
         /// <summary>
         /// List of tweets as displayed on the Mentions timeline.
         /// </summary>

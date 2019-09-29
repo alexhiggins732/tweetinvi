@@ -60,11 +60,11 @@ namespace Tweetinvi.Logic.DTO
         [JsonProperty("favorite_count")]
         public int? FavoriteCount { get; set; }
 
-        [JsonProperty("user")]
-        [JsonConverter(typeof(JsonPropertyConverterRepository))]
-        public IUserDTO CreatedBy { get; set; }
+        [JsonIgnore]
+        public UserDTO CreatedBy { get; set; }
 
-		[JsonProperty("current_user_retweet")]
+
+        [JsonProperty("current_user_retweet")]
         [JsonConverter(typeof(JsonPropertyConverterRepository))]
         public ITweetIdentifier CurrentUserRetweetIdentifier { get; set; }
 
@@ -162,5 +162,8 @@ namespace Tweetinvi.Logic.DTO
 
         [JsonProperty("withheld_scope")]
         public string WithheldScope { get; set; }
+        [JsonProperty("user")]
+        [JsonConverter(typeof(JsonPropertyConverterRepository))]
+        IUserDTO ITweetDTO.CreatedBy { get => (IUserDTO)CreatedBy; set => CreatedBy = (UserDTO)value; }
     }
 }
