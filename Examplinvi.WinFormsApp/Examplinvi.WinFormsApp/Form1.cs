@@ -22,6 +22,33 @@ namespace Examplinvi.WinFormsApp
         public Form1()
         {
             InitializeComponent();
+            var dir = @"c:\users\alexander.higgins\pictures\exposecnn";
+            var helper = new Helper();
+            for (var i = 1; i <= 12; i++)
+            {
+                var fileName = $"Expose CNN - Release 1 Part {i} of 12.mp4";
+                var filename = $"Expose CNN - Release 1 - Part {i} of 12.mp4";
+                var mediaPath = System.IO.Path.Combine(dir, fileName);
+
+                string text = $@"#ExposeCNN - Release 1 - PART {i} of 12: CNN Insider Blows Whistle on Network President Jeff Zucker’s Personal Vendetta Against POTUS
+
+#ExposeCNNDay";
+                if (!File.Exists(mediaPath))
+                {
+                    string bp = "";
+                }
+                Console.WriteLine($"uploading part {i}");
+                var video = Helper.UploadVideo(mediaPath);
+                var tParams = new Tweetinvi.Parameters.PublishTweetOptionalParameters()
+                {
+                    Medias = new List<IMedia>() { video }
+
+                };
+                Console.WriteLine($"publishing part {i}");
+                Tweet.PublishTweet(text, tParams);
+            }
+
+
             this.FormClosing += Form1_FormClosing;
         }
 

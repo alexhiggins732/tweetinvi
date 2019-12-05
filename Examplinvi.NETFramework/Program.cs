@@ -30,6 +30,7 @@ using System.Collections.Concurrent;
 using Tweetinvi.Logic.DTO;
 using Examplinvi.DbFx;
 using Examplinvi.DbFx.Models;
+using Examplinvi.NETFramework;
 // JSON static classes to get json from Twitter.
 
 // ReSharper disable UnusedVariable
@@ -89,9 +90,17 @@ namespace Examplinvi
     }
     class Program
     {
-        static void Main()
+        static Program()
         {
             Creds.Helper.SetCreds();
+        }
+        static void Main()
+        {
+
+
+            var processor = new MetricProcessor();
+            processor.Start();
+            
             //Auth.SetUserCredentials("CONSUMER_KEY", "CONSUMER_SECRET", "ACCESS_TOKEN", "ACCESS_TOKEN_SECRET");
 
             TweetinviEvents.QueryBeforeExecute += (sender, args) =>
@@ -998,7 +1007,7 @@ namespace Examplinvi
 
             //ids.Clear();
             ids.Add(current.Id);
-            ids.Add(2945287090);
+         
             ids = ids.Distinct().ToList();
             ids.ForEach(id => stream.AddFollow(id));
 

@@ -185,7 +185,7 @@ namespace Examplinvi.InviConsole
         public static void run()
         {
             VerifyFriends();
-            RevertPrevious();
+            //RevertPrevious();
             Update();
             AutoUnfollow();
         }

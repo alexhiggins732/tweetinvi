@@ -58,6 +58,7 @@ namespace Examplinvi.DbFx
         public DbSet<DbTweet> Tweets { get; set; }
         public DbSet<DbTweetMedia> Media { get; set; }
         public DbSet<DbVideoDetails> Videoes { get; set; }
+        public DbSet<Metric> Metrics { get; set; }
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
 
@@ -65,10 +66,20 @@ namespace Examplinvi.DbFx
             ConfigureTweetModel(modelBuilder);
             ConfigureMediaModel(modelBuilder);
             ConfigureVideoModel(modelBuilder);
-
+            ConfigureMetricsModel(modelBuilder);
 
 
             base.OnModelCreating(modelBuilder);
+        }
+
+        private void ConfigureMetricsModel(DbModelBuilder modelBuilder)
+        {
+            var entity = modelBuilder.Entity<Metric>();
+
+            entity.Property(a => a.Id)
+               .HasDatabaseGeneratedOption(DatabaseGeneratedOption.Identity);
+            entity.Property(a => a.Url)
+                .HasMaxLength(100).IsRequired();
         }
 
         private void ConfigureVideoModel(DbModelBuilder modelBuilder)
@@ -142,7 +153,7 @@ namespace Examplinvi.DbFx
         }
     }
 
-    public class DbRepo
+    public class DbRepo : IDisposable
     {
         public TDbContext Context;
 
@@ -182,6 +193,11 @@ namespace Examplinvi.DbFx
             Context.Set<T>().AddRange(entries);
             Context.SaveChanges();
         }
+        public void Add<T>(List<T> entries) where T : class
+        {
+            Context.Set<T>().AddRange(entries);
+            Context.SaveChanges();
+        }
         public void Add<T>(Func<IEnumerable<T>> p) where T : class
             => Add(p());
 
@@ -189,6 +205,10 @@ namespace Examplinvi.DbFx
         public void Update<T>(Func<IEnumerable<T>> entries) where T : class
             => Update(entries());
         public void Update<T>(IEnumerable<T> entries) where T : class
+        {
+            entries.ToList().ForEach(x => Update(x));
+        }
+        public void Update<T>(List<T> entries) where T : class
         {
             entries.ToList().ForEach(x => Update(x));
         }
@@ -203,5 +223,9 @@ namespace Examplinvi.DbFx
         public void Update<T>(Func<T> p) where T : class
             => Update(p());
 
+        public void Dispose()
+        {
+            ((IDisposable)Context).Dispose();
+        }
     }
 }

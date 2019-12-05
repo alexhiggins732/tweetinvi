@@ -1,0 +1,25 @@
+﻿CREATE TABLE [dbo].[DbUsers] (
+    [Id]               BIGINT         NOT NULL,
+    [ScreenName]       NVARCHAR (100) NULL,
+    [Name]             NVARCHAR (100) NULL,
+    [Description]      NVARCHAR (260) NULL,
+    [CreatedAt]        DATETIME       NOT NULL,
+    [FavoritesCount]   INT            NULL,
+    [ListedCount]      INT            NULL,
+    [StatusesCount]    INT            NOT NULL,
+    [FollowersCount]   INT            NOT NULL,
+    [FollowingCount]   INT            NOT NULL,
+    [Language]         INT            NULL,
+    [Verified]         BIT            NOT NULL,
+    [Following]        BIT            NOT NULL,
+    [FollowsMe]        BIT            NULL,
+    [FollowedDate]     DATETIME       NULL,
+    [UnFollowedDate]   DATETIME       NULL,
+    [FollowedMeDate]   DATETIME       NULL,
+    [UnFollowedMeDate] DATETIME       NULL,
+    [Protected]        BIT            NOT NULL,
+    [WhiteListed]      BIT            NOT NULL,
+    [IsMyUser] BIT NOT NULL Constraint DF_DbUsers_IsMyUser Default((0)), 
+    CONSTRAINT [PK_dbo.DbUsers] PRIMARY KEY CLUSTERED ([Id] ASC)
+);
+

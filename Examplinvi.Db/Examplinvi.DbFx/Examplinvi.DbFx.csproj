@@ -37,6 +37,12 @@
     <Reference Include="Autofac, Version=4.9.4.0, Culture=neutral, PublicKeyToken=17863af14b0044da, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Autofac.4.9.4\lib\net45\Autofac.dll</HintPath>
     </Reference>
+    <Reference Include="Dapper, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\Examplinvi.Lists\Examplinvi.Lists\packages\Dapper.2.0.30\lib\net461\Dapper.dll</HintPath>
+    </Reference>
+    <Reference Include="Dapper.Contrib, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\Examplinvi.Lists\Examplinvi.Lists\packages\Dapper.Contrib.2.0.30\lib\net461\Dapper.Contrib.dll</HintPath>
+    </Reference>
     <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <HintPath>..\..\packages\EntityFramework.6.3.0\lib\net45\EntityFramework.dll</HintPath>
     </Reference>
@@ -76,8 +82,26 @@
     <Compile Include="Migrations\201909252259288_DbMediaManyTweets2.designer.cs">
       <DependentUpon>201909252259288_DbMediaManyTweets2.cs</DependentUpon>
     </Compile>
+    <Compile Include="Migrations\201910011813457_AddMetrics.cs" />
+    <Compile Include="Migrations\201910011813457_AddMetrics.designer.cs">
+      <DependentUpon>201910011813457_AddMetrics.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201910011844596_AddMetrics1.cs" />
+    <Compile Include="Migrations\201910011844596_AddMetrics1.designer.cs">
+      <DependentUpon>201910011844596_AddMetrics1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201910011847234_AddMetrics2.cs" />
+    <Compile Include="Migrations\201910011847234_AddMetrics2.designer.cs">
+      <DependentUpon>201910011847234_AddMetrics2.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201911042226306_updatenov4.cs" />
+    <Compile Include="Migrations\201911042226306_updatenov4.designer.cs">
+      <DependentUpon>201911042226306_updatenov4.cs</DependentUpon>
+    </Compile>
     <Compile Include="Migrations\Configuration.cs" />
-    <Compile Include="Models\WhitelistedUser.cs" />
+    <Compile Include="Models\DbList.cs" />
+    <Compile Include="Models\Metric.cs" />
+    <Compile Include="Models\WhitelistedUsers.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TDbContext.cs" />
   </ItemGroup>
@@ -108,6 +132,18 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Migrations\201909252259288_DbMediaManyTweets2.resx">
       <DependentUpon>201909252259288_DbMediaManyTweets2.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201910011813457_AddMetrics.resx">
+      <DependentUpon>201910011813457_AddMetrics.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201910011844596_AddMetrics1.resx">
+      <DependentUpon>201910011844596_AddMetrics1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201910011847234_AddMetrics2.resx">
+      <DependentUpon>201910011847234_AddMetrics2.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201911042226306_updatenov4.resx">
+      <DependentUpon>201911042226306_updatenov4.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

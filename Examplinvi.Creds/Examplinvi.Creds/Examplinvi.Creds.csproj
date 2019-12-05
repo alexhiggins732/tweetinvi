@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -20,12 +20,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Testinvi\Testinvi.csproj" />
-    <ProjectReference Include="..\..\Tweetinvi.Credentials\Tweetinvi.Credentials.csproj" />
+
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Properties\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="TweetinviAPI" Version="4.0.2" />
   </ItemGroup>
 
 </Project>

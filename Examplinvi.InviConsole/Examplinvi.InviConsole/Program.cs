@@ -97,12 +97,25 @@ namespace Examplinvi.InviConsole
 
         public void SaveFriends()
         {
-            File.WriteAllText($"{nameof(friends)}.json", friends.ToJson());
+            var fileName = $"{nameof(friends)}.json";
+            if (File.Exists(fileName))
+            {
+                var backupFileName = $"{nameof(friends)}_{DateTime.Now.ToString("yyyy_MM_dd-hh_mm_ss")}.json";
+                File.Move(fileName, backupFileName);
+            }
+            File.WriteAllText(fileName, friends.ToJson());
         }
 
         public void SaveFollowers()
         {
-            File.WriteAllText($"{nameof(followers)}.json", followers.ToJson());
+            var fileName = $"{nameof(followers)}.json";
+            if (File.Exists(fileName))
+            {
+                var backupFileName = $"{nameof(followers)}_{DateTime.Now.ToString("yyyy_MM_dd-hh_mm_ss")}.json";
+                File.Move(fileName, backupFileName);
+            }
+
+            File.WriteAllText(fileName, followers.ToJson());
         }
 
         public List<long> GetFriendIds(RefreshMode refresh = DefaultRefreshMode)
@@ -175,7 +188,9 @@ namespace Examplinvi.InviConsole
         }
         static void Main(string[] args)
         {
-
+            UpdateFollowing();
+            if (bool.Parse(bool.TrueString))
+                return;
             RelFixer.run();
             GetDTOS();
           
@@ -519,7 +534,7 @@ namespace Examplinvi.InviConsole
 
         static void UpdateFollowing()
         {
-
+           
             FollowHelper.Update();
 
         }
@@ -664,8 +679,18 @@ namespace Examplinvi.InviConsole
             {
                 var dbUsers = NewApiUsersFollowingMe().Select(x => x.ToDbUser(true)).ToList();
                 var repo = new DbFx.DbRepo();
-                repo.Add((IEnumerable<DbUser>)dbUsers);
+                var newDbUserIds = dbUsers.Select(x => x.Id).ToList();
+                
+                var inDb = repo.Context.Users.Where(x => newDbUserIds.Contains(x.Id)).ToList();
+                var inDbIds = inDb.Select(x => x.Id).ToList();
 
+                repo.Add((IEnumerable<DbUser>)dbUsers.Where(x=> !inDbIds.Contains(x.Id)));
+                inDb.ForEach(x =>
+                {
+                    x.FollowsMe = true;
+                    x.FollowedMeDate = DateTime.Now;
+                });
+                repo.Update((IEnumerable<DbUser>)inDb);
             }
 
             private void UpdateExistingNewFollowers()
@@ -699,6 +724,7 @@ namespace Examplinvi.InviConsole
                 {
                     Console.WriteLine($"Unfollowing {+unfollowCount} of {idsToUnfollow.Count}");
                     User.UnFollowUser(id);
+                    System.Threading.Thread.Sleep(5000);
                 });
             }
         }
