@@ -23,6 +23,7 @@ namespace Examplinvi.WinFormsApp
         {
 
         }
+        public TextBox TextBox => this.txtUrls;
 
         private void btnSave_Click(object sender, EventArgs e)
         {

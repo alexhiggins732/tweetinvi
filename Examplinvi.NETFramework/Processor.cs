@@ -404,7 +404,8 @@ namespace Examplinvi.NETFramework
                         }
                         else
                         {
-                            followed = u.Following;
+                            if (u != null)
+                                followed = u.Following;
                         }
                     }
                     if (followed)
@@ -432,7 +433,7 @@ namespace Examplinvi.NETFramework
                     //  1440/ 400 per day = 3.6 = *60 = 216‬ seconds 
                     var jsonUpdated = FollowQueue.ToList().ToJson();
                     System.IO.File.WriteAllText("AFQueue.Json", jsonUpdated);
-                    if (FollowQueue.Count > 0) System.Threading.Thread.Sleep(216 * 1000);
+                    if (followed && FollowQueue.Count > 0) System.Threading.Thread.Sleep(216 * 1000);
                 }
                 if (FollowQueue.Count > 0) LogDebug($"FollowQueue.Count = {FollowQueue.Count} ");
             }

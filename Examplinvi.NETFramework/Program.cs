@@ -31,6 +31,11 @@ using Tweetinvi.Logic.DTO;
 using Examplinvi.DbFx;
 using Examplinvi.DbFx.Models;
 using Examplinvi.NETFramework;
+using AWords = Aspose.Words;
+using Aspose.Words.Tables;
+
+using Aspose.Words;
+using System.Data;
 // JSON static classes to get json from Twitter.
 
 // ReSharper disable UnusedVariable
@@ -93,14 +98,34 @@ namespace Examplinvi
         static Program()
         {
             Creds.Helper.SetCreds();
+            AWords.License license = new AWords.License();
+            license.SetLicense("Aspose.Total.lic");
         }
-        static void Main()
+        static void Main(string[] args)
         {
+            if (args != null && args.Length > 0)
+            {
+                args = args.Select(x => x.ToLower()).ToArray();
+                Action action = null;
+                if (args[0] == "rt")
+                {
+                    action = () =>
+                        RTProcessor.Run();
+                    action.Run($"{nameof(RTProcessor)}.log");
 
+                }
+                else if (args[0] == "stats")
+                {
+                    action = () => StatProcessor.Run();
+                    action.Run($"{nameof(StatProcessor)}.log");
+                }
+
+                return;
+            }
 
             var processor = new MetricProcessor();
             processor.Start();
-            
+
             //Auth.SetUserCredentials("CONSUMER_KEY", "CONSUMER_SECRET", "ACCESS_TOKEN", "ACCESS_TOKEN_SECRET");
 
             TweetinviEvents.QueryBeforeExecute += (sender, args) =>
@@ -423,7 +448,138 @@ namespace Examplinvi
         #endregion
     }
 
+    public class AsposeHelper
+    {
+        public static Document GetDataTableDocument(DataTable dataTable)
+        {
+            Document doc = new Document();
 
+            // We can position where we want the table to be inserted and also specify any extra formatting to be
+            // applied onto the table as well.
+
+
+
+            // Set font settings
+
+            DocumentBuilder builder = new DocumentBuilder(doc);
+
+            builder.PageSetup.TopMargin = builder.PageSetup.BottomMargin = 10;
+
+            Font font = builder.Font;
+            //font.Size = 16;
+            //font.Bold = true;
+
+            font.Name = "Calibri";
+            font.Color = System.Drawing.Color.Black;
+
+           
+            var rev = builder.ParagraphFormat.StyleIdentifier;
+            builder.ParagraphFormat.StyleIdentifier = StyleIdentifier.Heading2;
+            builder.ParagraphFormat.Alignment = ParagraphAlignment.Center;
+            builder.Writeln("Confirmed Corona Virus COVID-19 Cases");
+            builder.ParagraphFormat.StyleIdentifier = rev;
+            builder.ParagraphFormat.Alignment = ParagraphAlignment.Left;
+            //font.Underline = Underline.Dash;
+            //builder.Font = font;
+            // We want to rotate the page landscape as we expect a wide table.
+            //doc.FirstSection.PageSetup.Orientation = Orientation.Landscape;
+
+            Table table = ImportTableFromDataTable(builder, dataTable, true);
+            //table.StyleIdentifier = StyleIdentifier.MediumList2Accent1;
+            //table.StyleIdentifier = StyleIdentifier.ColorfulGridAccent1;
+            table.StyleIdentifier = StyleIdentifier.GridTable5DarkAccent1;
+            table.StyleIdentifier = StyleIdentifier.GridTable7ColorfulAccent1;
+            //table.StyleOptions = TableStyleOptions.FirstRow | TableStyleOptions.RowBands | TableStyleOptions.FirstColumn | TableStyleOptions.ColumnBands;// | TableStyleOptions.LastColumn;
+
+            // For our table we want to remove the heading for the image column.
+            //table.FirstRow.LastCell.RemoveAllChildren();
+            //builder.Writeln("");
+            //builder.Writeln("");
+            builder.Font.Size = 10;
+            builder.Font.Italic = true;
+            builder.Font.Bold = false;
+            builder.Write($"Generated {DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")} via ");
+            builder.Font.Bold = true;
+            builder.Write("@kr3at");
+            builder.Font.Bold = false;
+            builder.Writeln("");
+            builder.Writeln("Sources: Data sources: WHO, CDC, ECDC, NHC and DXY.");
+            builder.Writeln("For latest data see: https://www.worldometers.info/coronavirus/");
+
+            doc.UpdateFields();
+
+            return doc;
+
+        }
+        public static Table ImportTableFromDataTable(DocumentBuilder builder, DataTable dataTable, bool importColumnHeadings)
+        {
+            Table table = builder.StartTable();
+            var padd = table.TopPadding;
+            table.Style.ParagraphFormat.LineSpacing = 10;
+           
+            // Check if the names of the columns from the data source are to be included in a header row.
+            if (importColumnHeadings)
+            { 
+                var headerSize = builder.Font.Size;
+                builder.Font.Size = headerSize - 1;
+                // Store the original values of these properties before changing them.
+                bool boldValue = builder.Font.Bold;
+                ParagraphAlignment paragraphAlignmentValue = builder.ParagraphFormat.Alignment;
+
+                // Format the heading row with the appropriate properties.
+                builder.Font.Bold = true;
+                builder.ParagraphFormat.Alignment = ParagraphAlignment.Center;
+
+                // Create a new row and insert the name of each column into the first row of the table.
+                foreach (DataColumn column in dataTable.Columns)
+                {
+                    builder.InsertCell();
+                    builder.Write(column.ColumnName);
+                }
+
+                builder.EndRow();
+                builder.Font.Size = headerSize;
+
+                // Restore the original formatting.
+                builder.Font.Bold = boldValue;
+                builder.ParagraphFormat.Alignment = paragraphAlignmentValue;
+            }
+            var size = builder.Font.Size;
+            builder.Font.Size = size - 3;
+
+            foreach (DataRow dataRow in dataTable.Rows)
+            {
+                foreach (object item in dataRow.ItemArray)
+                {
+                    // Insert a new cell for each object.
+                    builder.InsertCell();
+
+                    switch (item.GetType().Name)
+                    {
+                        case "DateTime":
+                            // Define a custom format for dates and times.
+                            DateTime dateTime = (DateTime)item;
+                            builder.Write(dateTime.ToString("MMMM d, yyyy"));
+                            break;
+                        default:
+                            // By default any other item will be inserted as text.
+                            builder.Write(item.ToString());
+                            break;
+                    }
+
+                }
+
+                // After we insert all the data from the current record we can end the table row.
+                builder.EndRow();
+            }
+
+            // We have finished inserting all the data from the DataTable, we can end the table.
+            builder.EndTable();
+            builder.Font.Size = size;
+            return table;
+        }
+
+    }
     static class Examples
     {
         // ReSharper disable once UnusedAutoPropertyAccessor.Global
@@ -1007,7 +1163,7 @@ namespace Examplinvi
 
             //ids.Clear();
             ids.Add(current.Id);
-         
+
             ids = ids.Distinct().ToList();
             ids.ForEach(id => stream.AddFollow(id));
 
@@ -1067,7 +1223,7 @@ namespace Examplinvi
                                             dbMedia.Tweet.Add(tweet);
                                             tweet.Media.Add(dbMedia);
                                             tweet.Media.Remove(media);
-                                          
+
 
                                             //ctx.Media.Remove(dbMedia);
                                             // update Subset1
