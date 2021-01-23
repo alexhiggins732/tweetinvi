@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<graph>
+  <actor name="action">
+    <input>
+      <noderef name="rawinput" ></noderef>
+      <noderef id="feedback"></noderef>
+    </input>
+    <ouput>
+      <noderef id="actoroutput"></noderef>
+    </ouput>
+  </actor>
+  <critic name="critic">
+    <input>
+      <noderef id="rawinput"></noderef>
+      <noderef id="feedback"></noderef>
+    </input>
+    <ouput>
+      <noderef id="actoroutput"></noderef>
+    </ouput>
+  </critic>
+  <nodes>
+    <node name="rawinput" id="1"></node>
+    <node name="feedback" id="2"></node>
+    <node name="decision" id="2"></node>
+  </nodes>
+</graph>

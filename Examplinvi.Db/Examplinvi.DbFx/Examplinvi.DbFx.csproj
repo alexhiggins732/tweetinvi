@@ -76,8 +76,16 @@
     <Compile Include="Migrations\201909252259288_DbMediaManyTweets2.designer.cs">
       <DependentUpon>201909252259288_DbMediaManyTweets2.cs</DependentUpon>
     </Compile>
+    <Compile Include="Migrations\202101072014025_AddTweetDeleted.cs" />
+    <Compile Include="Migrations\202101072014025_AddTweetDeleted.designer.cs">
+      <DependentUpon>202101072014025_AddTweetDeleted.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\202101072052339_UpdateTweetTextLength.cs" />
+    <Compile Include="Migrations\202101072052339_UpdateTweetTextLength.designer.cs">
+      <DependentUpon>202101072052339_UpdateTweetTextLength.cs</DependentUpon>
+    </Compile>
     <Compile Include="Migrations\Configuration.cs" />
-    <Compile Include="Models\WhitelistedUser.cs" />
+    <Compile Include="Models\WhitelistedUsers.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TDbContext.cs" />
   </ItemGroup>
@@ -108,6 +116,12 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Migrations\201909252259288_DbMediaManyTweets2.resx">
       <DependentUpon>201909252259288_DbMediaManyTweets2.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202101072014025_AddTweetDeleted.resx">
+      <DependentUpon>202101072014025_AddTweetDeleted.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202101072052339_UpdateTweetTextLength.resx">
+      <DependentUpon>202101072052339_UpdateTweetTextLength.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

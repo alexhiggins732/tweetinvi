@@ -18,6 +18,12 @@ namespace Examplinvi.DbFx
     {
         public static void Test(string[] args)
         {
+
+            using (var ctx = new TDbContext())
+            {
+                var users = ctx.Users.ToList();
+            }
+
             List<IUser> friends = null;
             friends = JsonSerializer.ConvertJsonTo<List<IUser>>(File.ReadAllText($"{nameof(friends)}.json"));
             List<IUser> followers = null;
@@ -111,8 +117,7 @@ namespace Examplinvi.DbFx
             entity.Property(a => a.Id)
                .HasDatabaseGeneratedOption(DatabaseGeneratedOption.None);
             entity.Property(a => a.Text)
-                .HasMaxLength(260);
-
+                .HasMaxLength(300);
         }
 
         private void ConfigureUserModel(DbModelBuilder modelBuilder)
@@ -142,7 +147,7 @@ namespace Examplinvi.DbFx
         }
     }
 
-    public class DbRepo
+    public class DbRepo : IDisposable
     {
         public TDbContext Context;
 
@@ -200,8 +205,23 @@ namespace Examplinvi.DbFx
             int updated = Context.SaveChanges();
 
         }
+
+        public TEntity GetById<TEntity>(long id) where TEntity : class, IDbEntity
+        {
+            return Context.Set<TEntity>().FirstOrDefault(x => x.Id == id);
+        }
+
         public void Update<T>(Func<T> p) where T : class
             => Update(p());
 
+        public DbUser GetUserById(long id)
+        {
+            return GetById<DbUser>(id);
+        }
+
+        public void Dispose()
+        {
+            ((IDisposable)Context).Dispose();
+        }
     }
 }

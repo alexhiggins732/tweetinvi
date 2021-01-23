@@ -17,170 +17,98 @@ using System.Data.Entity.Design.PluralizationServices;
 
 namespace Examplinvi.InviConsole
 {
-    public enum RefreshMode
-    {
-        None = 0,
-        RefreshFromFileOrApi = 1,
-        RefreshFromApi = 2,
-    }
-    public class RelHelper
-    {
-        public const RefreshMode DefaultRefreshMode = RefreshMode.None;
-        public RelHelper()
-        {
-            Auth.SetUserCredentials(Creds.Settings.CONSUMER_KEY, Creds.Settings.CONSUMER_SECRET,
-                Creds.Settings.ACCESS_TOKEN, Creds.Settings.ACCESS_TOKEN_SECRET);
-            RateLimit.RateLimitTrackerMode = RateLimitTrackerMode.TrackAndAwait;
-            CurrentUser = User.GetAuthenticatedUser();
-        }
 
-        public IAuthenticatedUser CurrentUser;
-        List<IUser> friends;
-        List<IUser> followers;
-
-        public List<IUser> Friends => friends ?? GetFriends();
-        public List<IUser> Followers => followers ?? GetFollowers();
-
-
-        public List<IUser> GetFriends(RefreshMode refresh = DefaultRefreshMode)
-        {
-            Func<List<IUser>> refreshAction = null;
-            Func<List<IUser>> refreshFromApi = () => { friends = CurrentUser.GetFriends(Int32.MaxValue).ToList(); SaveFriends(); return friends; };
-            Func<List<IUser>> refreshFromFile = () => JsonSerializer.ConvertJsonTo<List<IUser>>(File.ReadAllText($"{nameof(friends)}.json"));
-            Func<List<IUser>> refreshFromFileOrApi = File.Exists($"{nameof(friends)}.json") ? refreshFromFile : refreshFromApi;
-
-            Func<List<IUser>> refreshFromMemory = () => friends;
-            switch (refresh)
-            {
-                case RefreshMode.RefreshFromApi:
-                    refreshAction = refreshFromApi;
-                    break;
-                case RefreshMode.RefreshFromFileOrApi:
-                    refreshAction = refreshFromFileOrApi;
-                    break;
-                case RefreshMode.None:
-                    refreshAction = friends is null ? refreshFromFileOrApi : refreshFromMemory;
-                    break;
-
-            }
-            friends = refreshAction();
-            return friends;
-        }
-
-
-        public List<IUser> GetFollowers(RefreshMode refresh = DefaultRefreshMode)
-        {
-            Func<List<IUser>> refreshAction = null;
-            Func<List<IUser>> refreshFromApi = () => { followers = CurrentUser.GetFollowers(Int32.MaxValue).ToList(); SaveFollowers(); return followers; };
-            Func<List<IUser>> refreshFromFile = () => JsonSerializer.ConvertJsonTo<List<IUser>>(File.ReadAllText($"{nameof(followers)}.json"));
-            Func<List<IUser>> refreshFromFileOrApi = File.Exists($"{nameof(followers)}.json") ? refreshFromFile : refreshFromApi;
-
-            Func<List<IUser>> refreshFromMemory = () => followers;
-            switch (refresh)
-            {
-                case RefreshMode.RefreshFromApi:
-                    refreshAction = refreshFromApi;
-                    break;
-                case RefreshMode.RefreshFromFileOrApi:
-                    refreshAction = refreshFromFileOrApi;
-                    break;
-                case RefreshMode.None:
-                    refreshAction = followers is null ? refreshFromFileOrApi : refreshFromMemory;
-                    break;
-
-            }
-            followers = refreshAction();
-            return followers;
-
-
-        }
-
-        public void SaveFriends()
-        {
-            File.WriteAllText($"{nameof(friends)}.json", friends.ToJson());
-        }
-
-        public void SaveFollowers()
-        {
-            File.WriteAllText($"{nameof(followers)}.json", followers.ToJson());
-        }
-
-        public List<long> GetFriendIds(RefreshMode refresh = DefaultRefreshMode)
-        {
-            return GetFriends(refresh).Select(x => x.Id).ToList();
-        }
-
-        public List<long> GetFollowerIds(RefreshMode refresh = DefaultRefreshMode)
-        {
-            return GetFollowers(refresh).Select(x => x.Id).ToList();
-        }
-
-        public List<long> GetFriendIdsNotFollowing(RefreshMode refresh = DefaultRefreshMode)
-        {
-            var friendsIds = GetFriendIds(refresh);
-            var followerIds = GetFollowerIds(refresh);
-            return friendsIds.Where(id => !followerIds.Contains(id)).ToList();
-        }
-
-        public List<IUser> GetFriendsNotFollowing(RefreshMode refresh = DefaultRefreshMode)
-        {
-            var friendIdsNotFollowingIds = GetFriendIdsNotFollowing(refresh);
-            var friends = GetFriends(refresh);
-            var result = friends.Where(friend => friendIdsNotFollowingIds.Contains(friend.Id)).ToList();
-            var orderedResult = result.OrderBy(x => x.FollowersCount).ToList();
-            return orderedResult;
-        }
-
-
-
-        public List<long> GetFollwersIdsWithoutFriends(RefreshMode refresh = DefaultRefreshMode)
-        {
-            var friendsIds = GetFriendIds(refresh);
-            var followerIds = GetFollowerIds(refresh);
-            return followerIds.Where(id => !friendsIds.Contains(id)).ToList();
-        }
-
-        internal void Unfollow(IUser user)
-        {
-            CurrentUser.UnFollowUser(user);
-            var removed = friends.Remove(user);
-            System.Diagnostics.Debug.Assert(removed);
-        }
-
-        internal void RefreshFromApi()
-        {
-            GetFriends(RefreshMode.RefreshFromApi);
-            GetFollowers(RefreshMode.RefreshFromApi);
-        }
-    }
-
-    public class JsonData
-    {
-        public static T LoadFileOrDefault<T>(string fileName)
-            where T : class, new()
-        {
-            if (File.Exists(fileName))
-            {
-                return JsonSerializer.ConvertJsonTo<T>(File.ReadAllText(fileName));
-            }
-            return new T();
-        }
-    }
     class Program
     {
 
+        static bool credsAreSet = false;
+        static void SetCreds()
+        {
+            if (credsAreSet) return;
+            credsAreSet = true;
+            //Auth.SetUserCredentials("CONSUMER_KEY", "CONSUMER_SECRET", "ACCESS_TOKEN", "ACCESS_TOKEN_SECRET");
+            Auth.SetUserCredentials(Creds.Settings.CONSUMER_KEY, Creds.Settings.CONSUMER_SECRET,
+                Creds.Settings.ACCESS_TOKEN, Creds.Settings.ACCESS_TOKEN_SECRET);
+            RateLimit.RateLimitTrackerMode = RateLimitTrackerMode.TrackAndAwait;
+            // Publish the Tweet "Hello World" on your Timeline
+            //Tweet.PublishTweet("Hello World!");
+
+        }
+
+        static void SyncRelationships()
+        {
+
+            var sync = new RelSync();
+            Console.WriteLine($"Running {nameof(RelSync)}.{nameof(RelSync.Run)}");
+            sync.Run();
+            Console.WriteLine($"Finished {nameof(RelSync)}.{nameof(RelSync.Run)}");
+
+            Console.WriteLine($"Running {nameof(RelSync)}.{nameof(RelSync.AutoUnfollow)}");
+            sync.AutoUnfollow();
+            Console.WriteLine($"Finished {nameof(RelSync)}.{nameof(RelSync.AutoUnfollow)}");
+        }
+
+        static void AutoFollowRTers()
+        {
+            var user = User.GetAuthenticatedUser();
+            var rts = Timeline.GetMentionsTimeline();
+
+            var mentionIds = new List<long>();
+            foreach (var rt in rts)
+            {
+                var UserId = rt.CreatedBy.Id;
+                mentionIds.Add(rt.CreatedBy.Id);
+                if (rt.InReplyToUserId != null)
+                    mentionIds.Add((long)rt.InReplyToUserId);
+
+                foreach (var mention in rt.UserMentions?.ToList())
+                {
+                    if (mention.Id != null)
+                        mentionIds.Add((long)mention.Id);
+                }
+                if (rt.QuotedTweet != null)
+                {
+
+                }
+
+            }
+            mentionIds = mentionIds.Where(x => x != user.Id).Distinct().ToList();
+
+            using (var ctx = new DbFx.TDbContext())
+            {
+                var dbUserIds = ctx.Users.Where(x => mentionIds.Contains(x.Id)).Select(x => x.Id).ToList();
+                mentionIds = mentionIds.Except(dbUserIds).ToList();
+            }
+            //var twitterUsers = User.GetUsersFromIds(mentionIds);
+            List<DbUser> followedUsers = new List<DbUser>();
+            foreach (var mentionUserId in mentionIds)
+            {
+                bool followed = user.FollowUser(mentionUserId);
+                var twitterUser = User.GetUserFromId(mentionUserId);
+                var dbUser = twitterUser.ToDbUser();
+                dbUser.FollowedDate = DateTime.Now;
+                dbUser.Following = true;
+                followedUsers.Add(dbUser);
+            }
+            using (var ctx = new DbFx.TDbContext())
+            {
+                ctx.Users.AddRange(followedUsers);
+                int saved = ctx.SaveChanges();
+            }
+        }
         static Program()
         {
             SetCreds();
         }
         static void Main(string[] args)
         {
-
-            RelFixer.run();
-            GetDTOS();
-          
+            ////TestDb();
+            //RelFixer.run();
+            //GetDTOS();
+            SyncRelationships();
             UpdateFollowing();
-            TestDb();
+            AutoFollowRTers();
+            //TestDb();
             //WhiteListFollowed();
             //special();
 
@@ -503,24 +431,12 @@ namespace Examplinvi.InviConsole
             return dest;
         }
 
-        static bool credsAreSet = false;
-        static void SetCreds()
-        {
-            if (credsAreSet) return;
-            credsAreSet = true;
-            //Auth.SetUserCredentials("CONSUMER_KEY", "CONSUMER_SECRET", "ACCESS_TOKEN", "ACCESS_TOKEN_SECRET");
-            Auth.SetUserCredentials(Creds.Settings.CONSUMER_KEY, Creds.Settings.CONSUMER_SECRET,
-                Creds.Settings.ACCESS_TOKEN, Creds.Settings.ACCESS_TOKEN_SECRET);
-            RateLimit.RateLimitTrackerMode = RateLimitTrackerMode.TrackAndAwait;
-            // Publish the Tweet "Hello World" on your Timeline
-            //Tweet.PublishTweet("Hello World!");
 
-        }
 
         static void UpdateFollowing()
         {
 
-            FollowHelper.Update();
+            //FollowHelper.Update();
 
         }
         public class FollowHelper
@@ -797,6 +713,164 @@ namespace Examplinvi.InviConsole
             System.IO.File.WriteAllText($"{nameof(friendsThatFollow)}.json", friendsThatFollow.ToJson());
             System.IO.File.WriteAllText($"{nameof(friendsThatDontFollow)}.json", friendsThatDontFollow.ToJson());
 
+        }
+    }
+    public enum RefreshMode
+    {
+        None = 0,
+        RefreshFromFileOrApi = 1,
+        RefreshFromApi = 2,
+    }
+    public class RelHelper
+    {
+        public const RefreshMode DefaultRefreshMode = RefreshMode.None;
+        public RelHelper()
+        {
+            Auth.SetUserCredentials(Creds.Settings.CONSUMER_KEY, Creds.Settings.CONSUMER_SECRET,
+                Creds.Settings.ACCESS_TOKEN, Creds.Settings.ACCESS_TOKEN_SECRET);
+            RateLimit.RateLimitTrackerMode = RateLimitTrackerMode.TrackAndAwait;
+            CurrentUser = User.GetAuthenticatedUser();
+        }
+
+        public IAuthenticatedUser CurrentUser;
+        List<IUser> friends;
+        List<IUser> followers;
+        List<long> friendIds;
+        List<long> followerIds;
+
+        public List<IUser> Friends => friends ?? GetFriends();
+        public List<IUser> Followers => followers ?? GetFollowers();
+        public List<long> FriendIds => friendIds ?? GetFriendIds();
+        public List<long> FollowerIds => followerIds ?? GetFollowerIds();
+
+
+
+        public List<IUser> GetFriends(RefreshMode refresh = DefaultRefreshMode)
+        {
+            Func<List<IUser>> refreshAction = null;
+            Func<List<IUser>> refreshFromApi = () => { friends = CurrentUser.GetFriends(Int32.MaxValue).ToList(); SaveFriends(); return friends; };
+            Func<List<IUser>> refreshFromFile = () => JsonSerializer.ConvertJsonTo<List<IUser>>(File.ReadAllText($"{nameof(friends)}.json"));
+            Func<List<IUser>> refreshFromFileOrApi = File.Exists($"{nameof(friends)}.json") ? refreshFromFile : refreshFromApi;
+
+            Func<List<IUser>> refreshFromMemory = () => friends;
+            switch (refresh)
+            {
+                case RefreshMode.RefreshFromApi:
+                    refreshAction = refreshFromApi;
+                    break;
+                case RefreshMode.RefreshFromFileOrApi:
+                    refreshAction = refreshFromFileOrApi;
+                    break;
+                case RefreshMode.None:
+                    refreshAction = friends is null ? refreshFromFileOrApi : refreshFromMemory;
+                    break;
+
+            }
+            friends = refreshAction();
+            return friends;
+        }
+
+
+        public List<IUser> GetFollowers(RefreshMode refresh = DefaultRefreshMode)
+        {
+            Func<List<IUser>> refreshAction = null;
+            Func<List<IUser>> refreshFromApi = () => { followers = CurrentUser.GetFollowers(Int32.MaxValue).ToList(); SaveFollowers(); return followers; };
+            Func<List<IUser>> refreshFromFile = () => JsonSerializer.ConvertJsonTo<List<IUser>>(File.ReadAllText($"{nameof(followers)}.json"));
+            Func<List<IUser>> refreshFromFileOrApi = File.Exists($"{nameof(followers)}.json") ? refreshFromFile : refreshFromApi;
+
+            Func<List<IUser>> refreshFromMemory = () => followers;
+            switch (refresh)
+            {
+                case RefreshMode.RefreshFromApi:
+                    refreshAction = refreshFromApi;
+                    break;
+                case RefreshMode.RefreshFromFileOrApi:
+                    refreshAction = refreshFromFileOrApi;
+                    break;
+                case RefreshMode.None:
+                    refreshAction = followers is null ? refreshFromFileOrApi : refreshFromMemory;
+                    break;
+
+            }
+            followers = refreshAction();
+            return followers;
+
+
+        }
+
+        public void SaveFriends()
+        {
+            File.WriteAllText($"{nameof(friends)}.json", friends.ToJson());
+        }
+
+        public void SaveFollowers()
+        {
+            File.WriteAllText($"{nameof(followers)}.json", followers.ToJson());
+        }
+
+        public List<long> GetFriendIds(RefreshMode refresh = DefaultRefreshMode)
+        {
+            if (friendIds == null)
+                friendIds = CurrentUser.GetFriendIds().ToList();
+            return friendIds;
+        }
+
+        public List<long> GetFollowerIds(RefreshMode refresh = DefaultRefreshMode)
+        {
+            if (followerIds == null)
+                followerIds = CurrentUser.GetFollowerIds().ToList();
+            return followerIds;
+        }
+
+        public List<long> GetFriendIdsNotFollowing(RefreshMode refresh = DefaultRefreshMode)
+        {
+            var friendsIds = GetFriendIds(refresh);
+            var followerIds = GetFollowerIds(refresh);
+            return friendsIds.Where(id => !followerIds.Contains(id)).ToList();
+        }
+
+        public List<IUser> GetFriendsNotFollowing(RefreshMode refresh = DefaultRefreshMode)
+        {
+            var friendIdsNotFollowingIds = GetFriendIdsNotFollowing(refresh);
+            var friends = GetFriends(refresh);
+            var result = friends.Where(friend => friendIdsNotFollowingIds.Contains(friend.Id)).ToList();
+            var orderedResult = result.OrderBy(x => x.FollowersCount).ToList();
+            return orderedResult;
+        }
+
+
+
+        public List<long> GetFollwersIdsWithoutFriends(RefreshMode refresh = DefaultRefreshMode)
+        {
+            var friendsIds = GetFriendIds(refresh);
+            var followerIds = GetFollowerIds(refresh);
+            return followerIds.Where(id => !friendsIds.Contains(id)).ToList();
+        }
+
+        internal void Unfollow(IUser user)
+        {
+            CurrentUser.UnFollowUser(user);
+            var removed = friends.Remove(user);
+            System.Diagnostics.Debug.Assert(removed);
+        }
+
+        internal void RefreshFromApi()
+        {
+            GetFriends(RefreshMode.RefreshFromApi);
+            GetFollowers(RefreshMode.RefreshFromApi);
+        }
+    }
+
+    public class JsonData
+    {
+        public static T LoadFileOrDefault<T>(string fileName)
+            where T : class, new()
+        {
+            if (File.Exists(fileName))
+            {
+                return JsonSerializer.ConvertJsonTo<T>(File.ReadAllText(fileName));
+            }
+            return new T();
         }
     }
 }
