@@ -102,10 +102,12 @@ namespace Examplinvi.InviConsole
         }
         static void Main(string[] args)
         {
-            ////TestDb();
-            //RelFixer.run();
-            //GetDTOS();
-            SyncRelationships();
+            UpdateFollowing();
+            if (bool.Parse(bool.TrueString))
+                return;
+            RelFixer.run();
+            GetDTOS();
+          
             UpdateFollowing();
             AutoFollowRTers();
             //TestDb();
@@ -435,8 +437,8 @@ namespace Examplinvi.InviConsole
 
         static void UpdateFollowing()
         {
-
-            //FollowHelper.Update();
+           
+            FollowHelper.Update();
 
         }
         public class FollowHelper
@@ -580,8 +582,18 @@ namespace Examplinvi.InviConsole
             {
                 var dbUsers = NewApiUsersFollowingMe().Select(x => x.ToDbUser(true)).ToList();
                 var repo = new DbFx.DbRepo();
-                repo.Add((IEnumerable<DbUser>)dbUsers);
+                var newDbUserIds = dbUsers.Select(x => x.Id).ToList();
+                
+                var inDb = repo.Context.Users.Where(x => newDbUserIds.Contains(x.Id)).ToList();
+                var inDbIds = inDb.Select(x => x.Id).ToList();
 
+                repo.Add((IEnumerable<DbUser>)dbUsers.Where(x=> !inDbIds.Contains(x.Id)));
+                inDb.ForEach(x =>
+                {
+                    x.FollowsMe = true;
+                    x.FollowedMeDate = DateTime.Now;
+                });
+                repo.Update((IEnumerable<DbUser>)inDb);
             }
 
             private void UpdateExistingNewFollowers()
@@ -615,6 +627,7 @@ namespace Examplinvi.InviConsole
                 {
                     Console.WriteLine($"Unfollowing {+unfollowCount} of {idsToUnfollow.Count}");
                     User.UnFollowUser(id);
+                    System.Threading.Thread.Sleep(5000);
                 });
             }
         }
